@@ -1,8 +1,19 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
 
-// Health returns the API health status.
+	"security/dto"
+)
+
+// Health godoc
+//
+//	@Summary		Health check
+//	@Description	Returns API health status
+//	@Tags			health
+//	@Produce		json
+//	@Success		200	{object}	dto.HealthResponse
+//	@Router			/health [get]
 func Health(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	writeJSON(w, http.StatusOK, dto.HealthResponse{Status: "ok"})
 }

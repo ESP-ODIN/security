@@ -156,3 +156,11 @@ func TestAdminRoutes(t *testing.T) {
 		}
 	})
 }
+
+func TestSwagger(t *testing.T) {
+	rec := httptest.NewRecorder()
+	testRouter().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/swagger/index.html", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusOK)
+	}
+}

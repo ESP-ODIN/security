@@ -18,7 +18,24 @@ import (
 	"security/repository"
 	"security/router"
 	"security/service"
+
+	_ "security/docs"
 )
+
+//	@title			ODIN Security API
+//	@version		1.0
+//	@description	Security pipeline API for ODIN agent versions (normalize, quarantine, analyze, smoke test, sandbox).
+//	@BasePath		/
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Bearer token. Example: "Bearer {token}"
+
+//	@securityDefinitions.apikey	AdminAuth
+//	@in							header
+//	@name						X-Admin
+//	@description				Admin flag placeholder. Use "true" for admin access.
 
 func main() {
 	if err := run(); err != nil {

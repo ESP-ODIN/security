@@ -33,6 +33,9 @@ Check the endpoint with:
 curl http://127.0.0.1:8080/health
 ```
 
+Swagger UI is available at [http://127.0.0.1:8080/swagger/index.html](http://127.0.0.1:8080/swagger/index.html).
+Regenerate docs after changing annotations with `make swagger`.
+
 ## Configuration
 
 By default, the server listens on `127.0.0.1:8080`. To change the port on Windows (PowerShell):
@@ -103,4 +106,5 @@ the server automatically inside the container. The container itself always liste
 - `dto`: request/response payloads.
 - `model`: domain models.
 - `middleware`: auth and cross-cutting HTTP middleware.
+- `docs`: generated Swagger/OpenAPI files (`make swagger`).
 - `migrations`: SQL migrations (to come).

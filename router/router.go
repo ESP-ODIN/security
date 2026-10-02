@@ -5,6 +5,8 @@ import (
 
 	"security/handler"
 	"security/middleware"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 // Deps groups HTTP handlers wired into the router.
@@ -19,6 +21,7 @@ func New(deps Deps) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handler.Health)
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	// Authentifié
 	mux.Handle("POST /api/v1/agents/{id}/versions", middleware.RequireAuth(http.HandlerFunc(deps.Version.Submit)))

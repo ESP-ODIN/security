@@ -1,4 +1,4 @@
-.PHONY: run build test vet fmt docker-build docker-dev
+.PHONY: run build test vet fmt swagger docker-build docker-dev
 
 -include .env
 
@@ -16,6 +16,9 @@ vet:
 
 fmt:
 	gofmt -w cmd config db router handler service repository dto model middleware
+
+swagger:
+	go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
 
 docker-build:
 	docker build -t security-api .
