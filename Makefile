@@ -15,7 +15,7 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -w cmd config db
+	gofmt -w cmd config db router handler service repository dto model middleware
 
 docker-build:
 	docker build -t security-api .

@@ -92,7 +92,15 @@ the server automatically inside the container. The container itself always liste
 
 ## Structure
 
-- `cmd/api`: HTTP server and routes.
+- `cmd/api`: entrypoint HTTP server.
+- `cmd/migrate`: reserved for migrations.
 - `config`: configuration loading and validation.
-- `db`: reserved for data access.
-- `cmd/migrate`: reserved for migrations; it returns an explicit error until the database is configured.
+- `db`: database connection pool.
+- `router`: HTTP route registration.
+- `handler`: HTTP handlers.
+- `service`: business logic (interfaces + implementations).
+- `repository`: data access (interfaces + implementations).
+- `dto`: request/response payloads.
+- `model`: domain models.
+- `middleware`: auth and cross-cutting HTTP middleware.
+- `migrations`: SQL migrations (to come).

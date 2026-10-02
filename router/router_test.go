@@ -1,4 +1,4 @@
-package main
+package router_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,20 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"security/handler"
+	"security/repository"
+	"security/router"
+	"security/service"
 )
+
+func testRouter() http.Handler {
+	return router.New(router.Deps{
+		Version:  handler.NewVersionHandler(service.NewVersionService(repository.NewVersionRepository())),
+		Security: handler.NewSecurityHandler(service.NewSecurityService(repository.NewSecurityRepository())),
+		Pipeline: handler.NewPipelineHandler(service.NewPipelineService(repository.NewPipelineRepository())),
+	})
+}
 
 func TestHealth(t *testing.T) {
 	for _, tc := range []struct {
@@ -19,7 +32,7 @@ func TestHealth(t *testing.T) {
 	} {
 		t.Run(tc.method+tc.path, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			routes().ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
+			testRouter().ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
 			if rec.Code != tc.status {
 				t.Fatalf("status = %d, want %d", rec.Code, tc.status)
 			}
@@ -50,7 +63,7 @@ func TestSecurityRoutesRequireAuth(t *testing.T) {
 	for _, tc := range paths {
 		t.Run("unauth "+tc.method+" "+tc.path, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			routes().ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
+			testRouter().ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
 			if rec.Code != http.StatusUnauthorized {
 				t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 			}
@@ -79,7 +92,7 @@ func TestSecurityRoutesAuthenticated(t *testing.T) {
 				req.Header.Set(k, v)
 			}
 			rec := httptest.NewRecorder()
-			routes().ServeHTTP(rec, req)
+			testRouter().ServeHTTP(rec, req)
 			if rec.Code != tc.status {
 				t.Fatalf("status = %d, want %d; body=%s", rec.Code, tc.status, rec.Body)
 			}
@@ -90,7 +103,7 @@ func TestSecurityRoutesAuthenticated(t *testing.T) {
 func TestAdminRoutes(t *testing.T) {
 	t.Run("list without auth", func(t *testing.T) {
 		rec := httptest.NewRecorder()
-		routes().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/admin/security/pipeline-runs?status=manual_review", nil))
+		testRouter().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/admin/security/pipeline-runs?status=manual_review", nil))
 		if rec.Code != http.StatusUnauthorized {
 			t.Fatalf("status = %d, want %d", rec.Code, http.StatusUnauthorized)
 		}
@@ -100,7 +113,7 @@ func TestAdminRoutes(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/security/pipeline-runs?status=manual_review", nil)
 		req.Header.Set("Authorization", "Bearer test")
 		rec := httptest.NewRecorder()
-		routes().ServeHTTP(rec, req)
+		testRouter().ServeHTTP(rec, req)
 		if rec.Code != http.StatusForbidden {
 			t.Fatalf("status = %d, want %d", rec.Code, http.StatusForbidden)
 		}
@@ -111,7 +124,7 @@ func TestAdminRoutes(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer test")
 		req.Header.Set("X-Admin", "true")
 		rec := httptest.NewRecorder()
-		routes().ServeHTTP(rec, req)
+		testRouter().ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusOK, rec.Body)
 		}
@@ -124,7 +137,7 @@ func TestAdminRoutes(t *testing.T) {
 		req.Header.Set("X-Admin", "true")
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
-		routes().ServeHTTP(rec, req)
+		testRouter().ServeHTTP(rec, req)
 		if rec.Code != http.StatusBadRequest {
 			t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusBadRequest, rec.Body)
 		}
@@ -137,7 +150,7 @@ func TestAdminRoutes(t *testing.T) {
 		req.Header.Set("X-Admin", "true")
 		req.Header.Set("Content-Type", "application/json")
 		rec := httptest.NewRecorder()
-		routes().ServeHTTP(rec, req)
+		testRouter().ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status = %d, want %d; body=%s", rec.Code, http.StatusOK, rec.Body)
 		}

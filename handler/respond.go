@@ -1,8 +1,10 @@
-package main
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
+
+	"security/dto"
 )
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
@@ -12,5 +14,5 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
-	writeJSON(w, status, map[string]string{"error": msg})
+	writeJSON(w, status, dto.ErrorResponse{Error: msg})
 }

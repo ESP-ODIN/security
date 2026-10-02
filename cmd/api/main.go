@@ -14,6 +14,10 @@ import (
 
 	"security/config"
 	"security/db"
+	"security/handler"
+	"security/repository"
+	"security/router"
+	"security/service"
 )
 
 func main() {
@@ -38,9 +42,23 @@ func run() error {
 	defer pool.Close()
 	slog.Info("connected to database")
 
+	versionRepo := repository.NewVersionRepository()
+	securityRepo := repository.NewSecurityRepository()
+	pipelineRepo := repository.NewPipelineRepository()
+
+	versionSvc := service.NewVersionService(versionRepo)
+	securitySvc := service.NewSecurityService(securityRepo)
+	pipelineSvc := service.NewPipelineService(pipelineRepo)
+
+	r := router.New(router.Deps{
+		Version:  handler.NewVersionHandler(versionSvc),
+		Security: handler.NewSecurityHandler(securitySvc),
+		Pipeline: handler.NewPipelineHandler(pipelineSvc),
+	})
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           routes(),
+		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,
