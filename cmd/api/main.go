@@ -14,7 +14,28 @@ import (
 
 	"security/config"
 	"security/db"
+	"security/handler"
+	"security/repository"
+	"security/router"
+	"security/service"
+
+	_ "security/docs"
 )
+
+//	@title			ODIN Security API
+//	@version		1.0
+//	@description	Security pipeline API for ODIN agent versions (normalize, quarantine, analyze, smoke test, sandbox).
+//	@BasePath		/
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				Bearer token. Example: "Bearer {token}"
+
+//	@securityDefinitions.apikey	AdminAuth
+//	@in							header
+//	@name						X-Admin
+//	@description				Admin flag placeholder. Use "true" for admin access.
 
 func main() {
 	if err := run(); err != nil {
@@ -38,9 +59,23 @@ func run() error {
 	defer pool.Close()
 	slog.Info("connected to database")
 
+	versionRepo := repository.NewVersionRepository()
+	securityRepo := repository.NewSecurityRepository()
+	pipelineRepo := repository.NewPipelineRepository()
+
+	versionSvc := service.NewVersionService(versionRepo)
+	securitySvc := service.NewSecurityService(securityRepo)
+	pipelineSvc := service.NewPipelineService(pipelineRepo)
+
+	r := router.New(router.Deps{
+		Version:  handler.NewVersionHandler(versionSvc),
+		Security: handler.NewSecurityHandler(securitySvc),
+		Pipeline: handler.NewPipelineHandler(pipelineSvc),
+	})
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           routes(),
+		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

@@ -1,0 +1,340 @@
+basePath: /
+definitions:
+  dto.DecisionRequest:
+    properties:
+      decision:
+        description: validé | rejeté
+        type: string
+      reason:
+        type: string
+    type: object
+  dto.DecisionResponse:
+    properties:
+      decision:
+        type: string
+      reason:
+        type: string
+      runId:
+        type: string
+    type: object
+  dto.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  dto.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
+  dto.PermissionsResponse:
+    properties:
+      agentId:
+        type: string
+      permissions:
+        items: {}
+        type: array
+      versionId:
+        type: string
+    type: object
+  dto.PipelineRunsResponse:
+    properties:
+      runs:
+        items: {}
+        type: array
+      status:
+        type: string
+    type: object
+  dto.SecurityReportResponse:
+    properties:
+      agentId:
+        type: string
+      sandboxAccess:
+        items: {}
+        type: array
+      secrets:
+        items: {}
+        type: array
+      versionId:
+        type: string
+      vulnerabilities:
+        items: {}
+        type: array
+    type: object
+  dto.SecurityStatusResponse:
+    properties:
+      agentId:
+        type: string
+      decision:
+        type: string
+      step:
+        type: string
+      versionId:
+        type: string
+    type: object
+  dto.SubmitVersionResponse:
+    properties:
+      agentId:
+        type: string
+      idempotencyKey:
+        type: string
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Security pipeline API for ODIN agent versions (normalize, quarantine,
+    analyze, smoke test, sandbox).
+  title: ODIN Security API
+  version: "1.0"
+paths:
+  /api/v1/admin/security/pipeline-runs:
+    get:
+      description: Lists security pipeline runs, typically those awaiting manual review
+      parameters:
+      - default: manual_review
+        description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PipelineRunsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - AdminAuth: []
+      summary: List pipeline runs
+      tags:
+      - admin
+  /api/v1/admin/security/pipeline-runs/{runId}/decision:
+    put:
+      consumes:
+      - application/json
+      description: Records a manual decision for complementary analysis. Body must
+        include decision (validé/rejeté) and reason (free text, audited).
+      parameters:
+      - description: Pipeline run ID
+        in: path
+        name: runId
+        required: true
+        type: string
+      - description: Manual decision
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.DecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      - AdminAuth: []
+      summary: Decide on a pipeline run
+      tags:
+      - admin
+  /api/v1/agents/{id}/versions:
+    post:
+      consumes:
+      - application/json
+      description: 'Submits a new version and starts the security pipeline (normalize,
+        quarantine, analyze, smoke test, sandbox). Idempotent via Idempotency-Key:
+        the same key does not start a second run.'
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Idempotency key to avoid duplicate pipeline runs
+        in: header
+        name: Idempotency-Key
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/dto.SubmitVersionResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Submit a new agent version
+      tags:
+      - versions
+  /api/v1/agents/{id}/versions/{versionId}/permissions:
+    get:
+      description: Returns permissions declared in this version's manifest (useful
+        to compare with the previous version)
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Version ID
+        in: path
+        name: versionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.PermissionsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List version permissions
+      tags:
+      - versions
+  /api/v1/agents/{id}/versions/{versionId}/security:
+    get:
+      description: Returns the pipeline status for this version (current step, decision)
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Version ID
+        in: path
+        name: versionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SecurityStatusResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get security pipeline status
+      tags:
+      - security
+  /api/v1/agents/{id}/versions/{versionId}/security/report:
+    get:
+      description: Returns detailed analysis results (secrets, vulnerabilities, observed
+        sandbox access)
+      parameters:
+      - description: Agent ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Version ID
+        in: path
+        name: versionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SecurityReportResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get security analysis report
+      tags:
+      - security
+  /health:
+    get:
+      description: Returns API health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+      summary: Health check
+      tags:
+      - health
+securityDefinitions:
+  AdminAuth:
+    description: Admin flag placeholder. Use "true" for admin access.
+    in: header
+    name: X-Admin
+    type: apiKey
+  BearerAuth:
+    description: 'Bearer token. Example: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
