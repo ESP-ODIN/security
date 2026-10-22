@@ -3,7 +3,8 @@ package handler
 import (
 	"net/http"
 
-	"security/service"
+	"security/internal/dto"
+	"security/internal/service"
 )
 
 // VersionHandler handles version-related endpoints.
@@ -23,17 +24,27 @@ func NewVersionHandler(svc service.VersionService) *VersionHandler {
 //	@Tags			versions
 //	@Accept			json
 //	@Produce		json
-//	@Param			id				path		string	true	"Agent ID"
+//	@Param			id				path		string	true	"Agent ID"	format(uuid)
 //	@Param			Idempotency-Key	header		string	false	"Idempotency key to avoid duplicate pipeline runs"
 //	@Success		202				{object}	dto.SubmitVersionResponse
-//	@Failure		401				{object}	dto.ErrorResponse
+//	@Failure		400				{object}	dto.ErrorResponse
+//	@Failure		401				{string}	string	"unauthorized"
 //	@Failure		500				{object}	dto.ErrorResponse
 //	@Security		BearerAuth
 //	@Router			/api/v1/agents/{id}/versions [post]
 func (h *VersionHandler) Submit(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.svc.Submit(r.Context(), r.PathValue("id"), r.Header.Get("Idempotency-Key"))
+	if _, ok := authenticatedIdentity(w, r); !ok {
+		return
+	}
+	agentID, ok := parsePathID(w, r.PathValue("id"), "agent id")
+	if !ok {
+		return
+	}
+	var resp dto.SubmitVersionResponse
+	var err error
+	resp, err = h.svc.Submit(r.Context(), agentID, r.Header.Get("Idempotency-Key"))
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusAccepted, resp)
@@ -45,17 +56,32 @@ func (h *VersionHandler) Submit(w http.ResponseWriter, r *http.Request) {
 //	@Description	Returns permissions declared in this version's manifest (useful to compare with the previous version)
 //	@Tags			versions
 //	@Produce		json
-//	@Param			id			path		string	true	"Agent ID"
-//	@Param			versionId	path		string	true	"Version ID"
+//	@Param			id			path		string	true	"Agent ID"		format(uuid)
+//	@Param			versionId	path		string	true	"Version ID"	format(uuid)
 //	@Success		200			{object}	dto.PermissionsResponse
-//	@Failure		401			{object}	dto.ErrorResponse
+//	@Failure		400			{object}	dto.ErrorResponse
+//	@Failure		401			{string}	string	"unauthorized"
+//	@Failure		404			{object}	dto.ErrorResponse
 //	@Failure		500			{object}	dto.ErrorResponse
 //	@Security		BearerAuth
 //	@Router			/api/v1/agents/{id}/versions/{versionId}/permissions [get]
 func (h *VersionHandler) GetPermissions(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.svc.GetPermissions(r.Context(), r.PathValue("id"), r.PathValue("versionId"))
+	if _, ok := authenticatedIdentity(w, r); !ok {
+		return
+	}
+	agentID, ok := parsePathID(w, r.PathValue("id"), "agent id")
+	if !ok {
+		return
+	}
+	versionID, ok := parsePathID(w, r.PathValue("versionId"), "version id")
+	if !ok {
+		return
+	}
+	var resp dto.PermissionsResponse
+	var err error
+	resp, err = h.svc.GetPermissions(r.Context(), agentID, versionID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeServiceError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, resp)

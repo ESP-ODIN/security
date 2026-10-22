@@ -20,12 +20,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "AdminAuth": []
                     }
                 ],
-                "description": "Lists security pipeline runs, typically those awaiting manual review",
+                "description": "Lists security pipeline runs, typically those awaiting manual review. The caller must be listed in ADMIN_USER_IDS.",
                 "produces": [
                     "application/json"
                 ],
@@ -50,9 +47,9 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
+                            "type": "string"
                         }
                     },
                     "403": {
@@ -75,12 +72,9 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "AdminAuth": []
                     }
                 ],
-                "description": "Records a manual decision for complementary analysis. Body must include decision (validé/rejeté) and reason (free text, audited).",
+                "description": "Records a manual decision for complementary analysis. Body must include decision (approved or rejected) and reason. The reason and the admin id are stored for audit.",
                 "consumes": [
                     "application/json"
                 ],
@@ -94,6 +88,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Pipeline run ID",
                         "name": "runId",
                         "in": "path",
@@ -123,13 +118,25 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "unauthorized",
                         "schema": {
-                            "$ref": "#/definitions/dto.ErrorResponse"
+                            "type": "string"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "413": {
+                        "description": "Request Entity Too Large",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -164,6 +171,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Agent ID",
                         "name": "id",
                         "in": "path",
@@ -183,10 +191,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.SubmitVersionResponse"
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -216,6 +230,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Agent ID",
                         "name": "id",
                         "in": "path",
@@ -223,6 +238,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Version ID",
                         "name": "versionId",
                         "in": "path",
@@ -236,8 +252,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.PermissionsResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -269,6 +297,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Agent ID",
                         "name": "id",
                         "in": "path",
@@ -276,6 +305,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Version ID",
                         "name": "versionId",
                         "in": "path",
@@ -289,8 +319,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.SecurityStatusResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -322,6 +364,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Agent ID",
                         "name": "id",
                         "in": "path",
@@ -329,6 +372,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "format": "uuid",
                         "description": "Version ID",
                         "name": "versionId",
                         "in": "path",
@@ -342,8 +386,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/dto.SecurityReportResponse"
                         }
                     },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/dto.ErrorResponse"
+                        }
+                    },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/dto.ErrorResponse"
                         }
@@ -359,17 +415,42 @@ const docTemplate = `{
         },
         "/health": {
             "get": {
-                "description": "Returns API health status",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "health"
                 ],
-                "summary": "Health check",
+                "summary": "Liveness check",
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/ready": {
+            "get": {
+                "description": "Pings the database on every request.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dto.HealthResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/dto.HealthResponse"
                         }
@@ -383,7 +464,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "decision": {
-                    "description": "validé | rejeté",
+                    "description": "approved | rejected",
                     "type": "string"
                 },
                 "reason": {
@@ -394,14 +475,19 @@ const docTemplate = `{
         "dto.DecisionResponse": {
             "type": "object",
             "properties": {
+                "decided_by": {
+                    "type": "string",
+                    "format": "uuid"
+                },
                 "decision": {
                     "type": "string"
                 },
                 "reason": {
                     "type": "string"
                 },
-                "runId": {
-                    "type": "string"
+                "run_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },
@@ -409,7 +495,8 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "error": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "invalid agent id"
                 }
             }
         },
@@ -425,15 +512,19 @@ const docTemplate = `{
         "dto.PermissionsResponse": {
             "type": "object",
             "properties": {
-                "agentId": {
-                    "type": "string"
+                "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
                 },
                 "permissions": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/model.Permission"
+                    }
                 },
-                "versionId": {
-                    "type": "string"
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },
@@ -442,7 +533,9 @@ const docTemplate = `{
             "properties": {
                 "runs": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/model.PipelineRun"
+                    }
                 },
                 "status": {
                     "type": "string"
@@ -452,31 +545,40 @@ const docTemplate = `{
         "dto.SecurityReportResponse": {
             "type": "object",
             "properties": {
-                "agentId": {
-                    "type": "string"
+                "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
                 },
-                "sandboxAccess": {
+                "sandbox_access": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/model.Finding"
+                    }
                 },
                 "secrets": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/model.Finding"
+                    }
                 },
-                "versionId": {
-                    "type": "string"
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid"
                 },
                 "vulnerabilities": {
                     "type": "array",
-                    "items": {}
+                    "items": {
+                        "$ref": "#/definitions/model.Finding"
+                    }
                 }
             }
         },
         "dto.SecurityStatusResponse": {
             "type": "object",
             "properties": {
-                "agentId": {
-                    "type": "string"
+                "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
                 },
                 "decision": {
                     "type": "string"
@@ -484,18 +586,20 @@ const docTemplate = `{
                 "step": {
                     "type": "string"
                 },
-                "versionId": {
-                    "type": "string"
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid"
                 }
             }
         },
         "dto.SubmitVersionResponse": {
             "type": "object",
             "properties": {
-                "agentId": {
-                    "type": "string"
+                "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
                 },
-                "idempotencyKey": {
+                "idempotency_key": {
                     "type": "string"
                 },
                 "message": {
@@ -505,17 +609,66 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.Finding": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Permission": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "scope": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.PipelineRun": {
+            "type": "object",
+            "properties": {
+                "agent_id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "decided_by": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "decision": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "step": {
+                    "type": "string"
+                },
+                "version_id": {
+                    "type": "string",
+                    "format": "uuid"
+                }
+            }
         }
     },
     "securityDefinitions": {
-        "AdminAuth": {
-            "description": "Admin flag placeholder. Use \"true\" for admin access.",
-            "type": "apiKey",
-            "name": "X-Admin",
-            "in": "header"
-        },
         "BearerAuth": {
-            "description": "Bearer token. Example: \"Bearer {token}\"",
+            "description": "JWT issued by Auth, sent as \"Bearer \u003ctoken\u003e\".",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

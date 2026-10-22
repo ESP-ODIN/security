@@ -1,10 +1,14 @@
-package service
+package implementation
 
 import (
 	"context"
 
-	"security/dto"
-	"security/repository"
+	"github.com/google/uuid"
+
+	"security/internal/dto"
+	"security/internal/model"
+	"security/internal/repository"
+	"security/internal/service"
 )
 
 type securityService struct {
@@ -12,19 +16,16 @@ type securityService struct {
 }
 
 // NewSecurityService returns a SecurityService.
-func NewSecurityService(repo repository.SecurityRepository) SecurityService {
+func NewSecurityService(repo repository.SecurityRepository) service.SecurityService {
 	return &securityService{repo: repo}
 }
 
-func (s *securityService) GetStatus(ctx context.Context, agentID, versionID string) (dto.SecurityStatusResponse, error) {
+func (s *securityService) GetStatus(ctx context.Context, agentID, versionID uuid.UUID) (dto.SecurityStatusResponse, error) {
 	run, err := s.repo.GetStatus(ctx, agentID, versionID)
 	if err != nil {
-		return dto.SecurityStatusResponse{}, err
+		return dto.SecurityStatusResponse{}, translate(err)
 	}
-	resp := dto.SecurityStatusResponse{
-		AgentID:   run.AgentID,
-		VersionID: run.VersionID,
-	}
+	resp := dto.SecurityStatusResponse{AgentID: agentID, VersionID: versionID}
 	if run.Step != "" {
 		resp.Step = &run.Step
 	}
@@ -34,24 +35,23 @@ func (s *securityService) GetStatus(ctx context.Context, agentID, versionID stri
 	return resp, nil
 }
 
-func (s *securityService) GetReport(ctx context.Context, agentID, versionID string) (dto.SecurityReportResponse, error) {
+func (s *securityService) GetReport(ctx context.Context, agentID, versionID uuid.UUID) (dto.SecurityReportResponse, error) {
 	report, err := s.repo.GetReport(ctx, agentID, versionID)
 	if err != nil {
-		return dto.SecurityReportResponse{}, err
+		return dto.SecurityReportResponse{}, translate(err)
 	}
 	return dto.SecurityReportResponse{
-		AgentID:         report.AgentID,
-		VersionID:       report.VersionID,
-		Secrets:         toAnySlice(report.Secrets),
-		Vulnerabilities: toAnySlice(report.Vulnerabilities),
-		SandboxAccess:   toAnySlice(report.SandboxAccess),
+		AgentID:         agentID,
+		VersionID:       versionID,
+		Secrets:         findingsOrEmpty(report.Secrets),
+		Vulnerabilities: findingsOrEmpty(report.Vulnerabilities),
+		SandboxAccess:   findingsOrEmpty(report.SandboxAccess),
 	}, nil
 }
 
-func toAnySlice[T any](items []T) []any {
-	out := make([]any, 0, len(items))
-	for _, item := range items {
-		out = append(out, item)
+func findingsOrEmpty(items []model.Finding) []model.Finding {
+	if items == nil {
+		return []model.Finding{}
 	}
-	return out
+	return items
 }

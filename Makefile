@@ -15,10 +15,10 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -w cmd config db router handler service repository dto model middleware
+	gofmt -w cmd config db internal
 
 swagger:
-	go run github.com/swaggo/swag/cmd/swag@v1.16.6 init -g cmd/api/main.go -o docs --parseDependency --parseInternal
+	go tool swag init -g cmd/api/main.go -o docs --parseInternal
 
 docker-build:
 	docker build -t security-api .

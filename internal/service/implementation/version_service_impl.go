@@ -1,11 +1,14 @@
-package service
+package implementation
 
 import (
 	"context"
 
-	"security/dto"
-	"security/model"
-	"security/repository"
+	"github.com/google/uuid"
+
+	"security/internal/dto"
+	"security/internal/model"
+	"security/internal/repository"
+	"security/internal/service"
 )
 
 type versionService struct {
@@ -13,14 +16,14 @@ type versionService struct {
 }
 
 // NewVersionService returns a VersionService.
-func NewVersionService(repo repository.VersionRepository) VersionService {
+func NewVersionService(repo repository.VersionRepository) service.VersionService {
 	return &versionService{repo: repo}
 }
 
-func (s *versionService) Submit(ctx context.Context, agentID, idempotencyKey string) (dto.SubmitVersionResponse, error) {
+func (s *versionService) Submit(ctx context.Context, agentID uuid.UUID, idempotencyKey string) (dto.SubmitVersionResponse, error) {
 	version := model.Version{AgentID: agentID, Status: "accepted"}
 	if _, err := s.repo.Create(ctx, version, idempotencyKey); err != nil {
-		return dto.SubmitVersionResponse{}, err
+		return dto.SubmitVersionResponse{}, translate(err)
 	}
 	return dto.SubmitVersionResponse{
 		AgentID:        agentID,
@@ -30,18 +33,17 @@ func (s *versionService) Submit(ctx context.Context, agentID, idempotencyKey str
 	}, nil
 }
 
-func (s *versionService) GetPermissions(ctx context.Context, agentID, versionID string) (dto.PermissionsResponse, error) {
+func (s *versionService) GetPermissions(ctx context.Context, agentID, versionID uuid.UUID) (dto.PermissionsResponse, error) {
 	perms, err := s.repo.GetPermissions(ctx, agentID, versionID)
 	if err != nil {
-		return dto.PermissionsResponse{}, err
+		return dto.PermissionsResponse{}, translate(err)
 	}
-	items := make([]any, 0, len(perms))
-	for _, p := range perms {
-		items = append(items, p)
+	if perms == nil {
+		perms = []model.Permission{}
 	}
 	return dto.PermissionsResponse{
 		AgentID:     agentID,
 		VersionID:   versionID,
-		Permissions: items,
+		Permissions: perms,
 	}, nil
 }

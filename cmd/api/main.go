@@ -12,14 +12,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ESP-ODIN/authkit-go"
+
 	"security/config"
 	"security/db"
-	"security/handler"
-	"security/repository"
-	"security/router"
-	"security/service"
-
-	_ "security/docs"
+	"security/internal/handler"
+	repositoryimpl "security/internal/repository/implementation"
+	"security/internal/router"
+	serviceimpl "security/internal/service/implementation"
 )
 
 //	@title			ODIN Security API
@@ -30,12 +30,7 @@ import (
 //	@securityDefinitions.apikey	BearerAuth
 //	@in							header
 //	@name						Authorization
-//	@description				Bearer token. Example: "Bearer {token}"
-
-//	@securityDefinitions.apikey	AdminAuth
-//	@in							header
-//	@name						X-Admin
-//	@description				Admin flag placeholder. Use "true" for admin access.
+//	@description				JWT issued by Auth, sent as "Bearer <token>".
 
 func main() {
 	if err := run(); err != nil {
@@ -49,6 +44,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	authenticator, err := authkit.New(authkit.Config{
+		JWKSURL:  cfg.AuthJWKSURL,
+		Issuer:   cfg.AuthIssuer,
+		Audience: cfg.AuthAudience,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize authentication: %w", err)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -59,18 +62,15 @@ func run() error {
 	defer pool.Close()
 	slog.Info("connected to database")
 
-	versionRepo := repository.NewVersionRepository()
-	securityRepo := repository.NewSecurityRepository()
-	pipelineRepo := repository.NewPipelineRepository()
+	versionRepo := repositoryimpl.NewVersionRepository()
+	securityRepo := repositoryimpl.NewSecurityRepository()
+	pipelineRepo := repositoryimpl.NewPipelineRepository()
 
-	versionSvc := service.NewVersionService(versionRepo)
-	securitySvc := service.NewSecurityService(securityRepo)
-	pipelineSvc := service.NewPipelineService(pipelineRepo)
-
-	r := router.New(router.Deps{
-		Version:  handler.NewVersionHandler(versionSvc),
-		Security: handler.NewSecurityHandler(securitySvc),
-		Pipeline: handler.NewPipelineHandler(pipelineSvc),
+	r := router.New(pool, router.Deps{
+		Version:       handler.NewVersionHandler(serviceimpl.NewVersionService(versionRepo)),
+		Security:      handler.NewSecurityHandler(serviceimpl.NewSecurityService(securityRepo)),
+		Pipeline:      handler.NewPipelineHandler(serviceimpl.NewPipelineService(pipelineRepo), cfg.AdminUserIDs),
+		Authenticator: authenticator,
 	})
 
 	server := &http.Server{

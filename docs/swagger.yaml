@@ -3,23 +3,28 @@ definitions:
   dto.DecisionRequest:
     properties:
       decision:
-        description: validé | rejeté
+        description: approved | rejected
         type: string
       reason:
         type: string
     type: object
   dto.DecisionResponse:
     properties:
+      decided_by:
+        format: uuid
+        type: string
       decision:
         type: string
       reason:
         type: string
-      runId:
+      run_id:
+        format: uuid
         type: string
     type: object
   dto.ErrorResponse:
     properties:
       error:
+        example: invalid agent id
         type: string
     type: object
   dto.HealthResponse:
@@ -30,58 +35,107 @@ definitions:
     type: object
   dto.PermissionsResponse:
     properties:
-      agentId:
+      agent_id:
+        format: uuid
         type: string
       permissions:
-        items: {}
+        items:
+          $ref: '#/definitions/model.Permission'
         type: array
-      versionId:
+      version_id:
+        format: uuid
         type: string
     type: object
   dto.PipelineRunsResponse:
     properties:
       runs:
-        items: {}
+        items:
+          $ref: '#/definitions/model.PipelineRun'
         type: array
       status:
         type: string
     type: object
   dto.SecurityReportResponse:
     properties:
-      agentId:
+      agent_id:
+        format: uuid
         type: string
-      sandboxAccess:
-        items: {}
+      sandbox_access:
+        items:
+          $ref: '#/definitions/model.Finding'
         type: array
       secrets:
-        items: {}
+        items:
+          $ref: '#/definitions/model.Finding'
         type: array
-      versionId:
+      version_id:
+        format: uuid
         type: string
       vulnerabilities:
-        items: {}
+        items:
+          $ref: '#/definitions/model.Finding'
         type: array
     type: object
   dto.SecurityStatusResponse:
     properties:
-      agentId:
+      agent_id:
+        format: uuid
         type: string
       decision:
         type: string
       step:
         type: string
-      versionId:
+      version_id:
+        format: uuid
         type: string
     type: object
   dto.SubmitVersionResponse:
     properties:
-      agentId:
+      agent_id:
+        format: uuid
         type: string
-      idempotencyKey:
+      idempotency_key:
         type: string
       message:
         type: string
       status:
+        type: string
+    type: object
+  model.Finding:
+    properties:
+      message:
+        type: string
+      type:
+        type: string
+    type: object
+  model.Permission:
+    properties:
+      name:
+        type: string
+      scope:
+        type: string
+    type: object
+  model.PipelineRun:
+    properties:
+      agent_id:
+        format: uuid
+        type: string
+      decided_by:
+        format: uuid
+        type: string
+      decision:
+        type: string
+      id:
+        format: uuid
+        type: string
+      reason:
+        type: string
+      status:
+        type: string
+      step:
+        type: string
+      version_id:
+        format: uuid
         type: string
     type: object
 info:
@@ -93,7 +147,8 @@ info:
 paths:
   /api/v1/admin/security/pipeline-runs:
     get:
-      description: Lists security pipeline runs, typically those awaiting manual review
+      description: Lists security pipeline runs, typically those awaiting manual review.
+        The caller must be listed in ADMIN_USER_IDS.
       parameters:
       - default: manual_review
         description: Filter by status
@@ -108,9 +163,9 @@ paths:
           schema:
             $ref: '#/definitions/dto.PipelineRunsResponse'
         "401":
-          description: Unauthorized
+          description: unauthorized
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            type: string
         "403":
           description: Forbidden
           schema:
@@ -121,7 +176,6 @@ paths:
             $ref: '#/definitions/dto.ErrorResponse'
       security:
       - BearerAuth: []
-      - AdminAuth: []
       summary: List pipeline runs
       tags:
       - admin
@@ -130,9 +184,11 @@ paths:
       consumes:
       - application/json
       description: Records a manual decision for complementary analysis. Body must
-        include decision (validé/rejeté) and reason (free text, audited).
+        include decision (approved or rejected) and reason. The reason and the admin
+        id are stored for audit.
       parameters:
       - description: Pipeline run ID
+        format: uuid
         in: path
         name: runId
         required: true
@@ -155,11 +211,19 @@ paths:
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: unauthorized
           schema:
-            $ref: '#/definitions/dto.ErrorResponse'
+            type: string
         "403":
           description: Forbidden
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "413":
+          description: Request Entity Too Large
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "500":
@@ -168,7 +232,6 @@ paths:
             $ref: '#/definitions/dto.ErrorResponse'
       security:
       - BearerAuth: []
-      - AdminAuth: []
       summary: Decide on a pipeline run
       tags:
       - admin
@@ -181,6 +244,7 @@ paths:
         the same key does not start a second run.'
       parameters:
       - description: Agent ID
+        format: uuid
         in: path
         name: id
         required: true
@@ -196,10 +260,14 @@ paths:
           description: Accepted
           schema:
             $ref: '#/definitions/dto.SubmitVersionResponse'
-        "401":
-          description: Unauthorized
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
+        "401":
+          description: unauthorized
+          schema:
+            type: string
         "500":
           description: Internal Server Error
           schema:
@@ -215,11 +283,13 @@ paths:
         to compare with the previous version)
       parameters:
       - description: Agent ID
+        format: uuid
         in: path
         name: id
         required: true
         type: string
       - description: Version ID
+        format: uuid
         in: path
         name: versionId
         required: true
@@ -231,8 +301,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.PermissionsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: unauthorized
+          schema:
+            type: string
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "500":
@@ -249,11 +327,13 @@ paths:
       description: Returns the pipeline status for this version (current step, decision)
       parameters:
       - description: Agent ID
+        format: uuid
         in: path
         name: id
         required: true
         type: string
       - description: Version ID
+        format: uuid
         in: path
         name: versionId
         required: true
@@ -265,8 +345,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.SecurityStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: unauthorized
+          schema:
+            type: string
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "500":
@@ -284,11 +372,13 @@ paths:
         sandbox access)
       parameters:
       - description: Agent ID
+        format: uuid
         in: path
         name: id
         required: true
         type: string
       - description: Version ID
+        format: uuid
         in: path
         name: versionId
         required: true
@@ -300,8 +390,16 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.SecurityReportResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
         "401":
-          description: Unauthorized
+          description: unauthorized
+          schema:
+            type: string
+        "404":
+          description: Not Found
           schema:
             $ref: '#/definitions/dto.ErrorResponse'
         "500":
@@ -315,7 +413,6 @@ paths:
       - security
   /health:
     get:
-      description: Returns API health status
       produces:
       - application/json
       responses:
@@ -323,17 +420,29 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/dto.HealthResponse'
-      summary: Health check
+      summary: Liveness check
+      tags:
+      - health
+  /ready:
+    get:
+      description: Pings the database on every request.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+      summary: Readiness check
       tags:
       - health
 securityDefinitions:
-  AdminAuth:
-    description: Admin flag placeholder. Use "true" for admin access.
-    in: header
-    name: X-Admin
-    type: apiKey
   BearerAuth:
-    description: 'Bearer token. Example: "Bearer {token}"'
+    description: JWT issued by Auth, sent as "Bearer <token>".
     in: header
     name: Authorization
     type: apiKey

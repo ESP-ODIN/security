@@ -17,7 +17,7 @@ flowchart TB
     GHA -->|push sur main| GR
 
     subgraph Railway["Railway"]
-        API["API Gin (Go)<br/>reçoit publish, crée un job"]
+        API["API Go (net/http)<br/>reçoit publish, crée un job"]
 
         subgraph WORKER["Worker (Go) — les 6 étapes"]
             S1[1. Normalisation]

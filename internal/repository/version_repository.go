@@ -3,12 +3,16 @@ package repository
 import (
 	"context"
 
-	"security/model"
+	"github.com/google/uuid"
+
+	"security/internal/model"
 )
 
 // VersionRepository persists agent versions.
 type VersionRepository interface {
 	Create(ctx context.Context, version model.Version, idempotencyKey string) (model.Version, error)
-	GetByID(ctx context.Context, agentID, versionID string) (model.Version, error)
-	GetPermissions(ctx context.Context, agentID, versionID string) ([]model.Permission, error)
+	// GetByID returns ErrNotFound when the version does not exist.
+	GetByID(ctx context.Context, agentID, versionID uuid.UUID) (model.Version, error)
+	// GetPermissions returns ErrNotFound when the version does not exist.
+	GetPermissions(ctx context.Context, agentID, versionID uuid.UUID) ([]model.Permission, error)
 }
