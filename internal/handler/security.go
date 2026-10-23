@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"security/internal/dto"
 	"security/internal/service"
 )
 
@@ -79,9 +78,7 @@ func (h *SecurityHandler) GetReport(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var resp dto.SecurityReportResponse
-	var err error
-	resp, err = h.svc.GetReport(r.Context(), agentID, versionID)
+	resp, err := h.svc.GetReport(r.Context(), agentID, versionID)
 	if err != nil {
 		writeServiceError(w, err)
 		return

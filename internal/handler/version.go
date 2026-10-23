@@ -3,7 +3,6 @@ package handler
 import (
 	"net/http"
 
-	"security/internal/dto"
 	"security/internal/service"
 )
 
@@ -40,9 +39,7 @@ func (h *VersionHandler) Submit(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var resp dto.SubmitVersionResponse
-	var err error
-	resp, err = h.svc.Submit(r.Context(), agentID, r.Header.Get("Idempotency-Key"))
+	resp, err := h.svc.Submit(r.Context(), agentID, r.Header.Get("Idempotency-Key"))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -77,9 +74,7 @@ func (h *VersionHandler) GetPermissions(w http.ResponseWriter, r *http.Request) 
 	if !ok {
 		return
 	}
-	var resp dto.PermissionsResponse
-	var err error
-	resp, err = h.svc.GetPermissions(r.Context(), agentID, versionID)
+	resp, err := h.svc.GetPermissions(r.Context(), agentID, versionID)
 	if err != nil {
 		writeServiceError(w, err)
 		return

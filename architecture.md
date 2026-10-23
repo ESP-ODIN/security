@@ -42,8 +42,8 @@ flowchart TB
     WORKER -. lit/écrit état .-> NEON
     S5 -.-> SANDBOXTOOL
 
-    S6 -->|validé| R2
-    S6 -->|rejeté| NOTIF
+    S6 -->|approved| R2
+    S6 -->|rejected| NOTIF
     S6 -->|douteux| MANUAL
 
     classDef entry fill:#F1EFE8,stroke:#5F5E5A,color:#2C2C2A,stroke-width:1px
