@@ -12,9 +12,25 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ESP-ODIN/authkit-go"
+
 	"security/config"
 	"security/db"
+	"security/internal/handler"
+	repositoryimpl "security/internal/repository/implementation"
+	"security/internal/router"
+	serviceimpl "security/internal/service/implementation"
 )
+
+//	@title			ODIN Security API
+//	@version		1.0
+//	@description	Security pipeline API for ODIN agent versions (normalize, quarantine, analyze, smoke test, sandbox).
+//	@BasePath		/
+
+//	@securityDefinitions.apikey	BearerAuth
+//	@in							header
+//	@name						Authorization
+//	@description				JWT issued by Auth, sent as "Bearer <token>".
 
 func main() {
 	if err := run(); err != nil {
@@ -28,6 +44,14 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	authenticator, err := authkit.New(authkit.Config{
+		JWKSURL:  cfg.AuthJWKSURL,
+		Issuer:   cfg.AuthIssuer,
+		Audience: cfg.AuthAudience,
+	})
+	if err != nil {
+		return fmt.Errorf("initialize authentication: %w", err)
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -38,9 +62,20 @@ func run() error {
 	defer pool.Close()
 	slog.Info("connected to database")
 
+	versionRepo := repositoryimpl.NewVersionRepository()
+	securityRepo := repositoryimpl.NewSecurityRepository()
+	pipelineRepo := repositoryimpl.NewPipelineRepository()
+
+	r := router.New(pool, router.Deps{
+		Version:       handler.NewVersionHandler(serviceimpl.NewVersionService(versionRepo)),
+		Security:      handler.NewSecurityHandler(serviceimpl.NewSecurityService(securityRepo)),
+		Pipeline:      handler.NewPipelineHandler(serviceimpl.NewPipelineService(pipelineRepo), cfg.AdminUserIDs),
+		Authenticator: authenticator,
+	})
+
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           routes(),
+		Handler:           r,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

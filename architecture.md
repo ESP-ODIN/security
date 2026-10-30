@@ -17,7 +17,7 @@ flowchart TB
     GHA -->|push sur main| GR
 
     subgraph Railway["Railway"]
-        API["API Gin (Go)<br/>reçoit publish, crée un job"]
+        API["API Go (net/http)<br/>reçoit publish, crée un job"]
 
         subgraph WORKER["Worker (Go) — les 6 étapes"]
             S1[1. Normalisation]
@@ -42,8 +42,8 @@ flowchart TB
     WORKER -. lit/écrit état .-> NEON
     S5 -.-> SANDBOXTOOL
 
-    S6 -->|validé| R2
-    S6 -->|rejeté| NOTIF
+    S6 -->|approved| R2
+    S6 -->|rejected| NOTIF
     S6 -->|douteux| MANUAL
 
     classDef entry fill:#F1EFE8,stroke:#5F5E5A,color:#2C2C2A,stroke-width:1px

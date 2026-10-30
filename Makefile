@@ -1,4 +1,4 @@
-.PHONY: run build test vet fmt docker-build docker-dev
+.PHONY: run build test vet fmt swagger docker-build docker-dev
 
 -include .env
 
@@ -15,7 +15,10 @@ vet:
 	go vet ./...
 
 fmt:
-	gofmt -w cmd config db
+	gofmt -w cmd config db internal
+
+swagger:
+	go tool swag init -g cmd/api/main.go -o docs --parseInternal
 
 docker-build:
 	docker build -t security-api .

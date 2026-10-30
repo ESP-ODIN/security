@@ -27,11 +27,17 @@ export DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
 go run ./cmd/api
 ```
 
-Check the endpoint with:
+Check the endpoints with:
 
 ```sh
 curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/ready
 ```
+
+`/health` is a liveness check. `/ready` pings the database.
+
+Swagger UI is available at [http://127.0.0.1:8080/swagger/index.html](http://127.0.0.1:8080/swagger/index.html).
+Regenerate docs after changing annotations with `make swagger`.
 
 ## Configuration
 
@@ -49,7 +55,8 @@ export HTTP_ADDR=127.0.0.1:8081
 go run ./cmd/api
 ```
 
-`DATABASE_URL` is required (the API connects to Postgres and pings it on startup).
+`DATABASE_URL`, `AUTH_JWKS_URL`, `AUTH_ISSUER` and `AUTH_AUDIENCE` are required.
+`ADMIN_USER_IDS` is an optional comma-separated list of Auth user UUIDs allowed to call admin routes.
 `.env.exemple` documents the environment variables. `.env` files are not loaded automatically
 by `go run`/`go build` — export them yourself, or use `make docker-dev` below, which reads `.env`.
 Configuration is read from the process environment.
@@ -92,7 +99,18 @@ the server automatically inside the container. The container itself always liste
 
 ## Structure
 
-- `cmd/api`: HTTP server and routes.
+- `cmd/api`: entrypoint HTTP server.
+- `cmd/migrate`: reserved for migrations.
 - `config`: configuration loading and validation.
-- `db`: reserved for data access.
-- `cmd/migrate`: reserved for migrations; it returns an explicit error until the database is configured.
+- `db`: database connection pool.
+- `internal/router`: HTTP route registration, one file per domain.
+- `internal/handler`: HTTP handlers.
+- `internal/service`: business logic interfaces.
+- `internal/service/implementation`: service implementations.
+- `internal/repository`: data access interfaces.
+- `internal/repository/implementation`: repository implementations.
+- `internal/dto`: request/response payloads.
+- `internal/model`: domain models.
+- `internal/testutil`: JWT fixtures for tests.
+- `docs`: generated Swagger/OpenAPI files (`make swagger`).
+- `migrations`: SQL migrations (to come).
